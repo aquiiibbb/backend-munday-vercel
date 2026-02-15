@@ -1,61 +1,65 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const user = require('./Routes/user.Routes'); // Path check kar lena sahi hai na
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const user = require("./Routes/user.Routes");
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-let isConnected = false;
-
-const connectToMongoDB = async () => {
-    // Agar mongoose pehle se connected hai (readyState 1) toh return kar jao
-    if (mongoose.connection.readyState === 1) {
-        return;
-    }
-
+// 🔹 MongoDB Connection Function
+const connectDB = async () => {
     try {
-        console.log("Connecting to MongoDB...");
+        if (mongoose.connection.readyState >= 1) {
+            return;
+        }
+
         await mongoose.connect(process.env.MONGODB_URI);
-        isConnected = true;
-        console.log("Database connected successfully");
+        console.log("MongoDB Connected Successfully ✅");
     } catch (error) {
-        console.error("Database connection error:", error);
+        console.error("MongoDB Connection Failed ❌", error);
         throw error;
     }
 };
 
-// Middleware
+// 🔹 Middleware
 app.use(cors({
     origin: [
-        'http://localhost:3000',
-        'https://americanninnmonday.vercel.app'
+        "http://localhost:3000",
+        "https://americanninnmonday.vercel.app"
     ],
     credentials: true
 }));
 
 app.use(express.json());
 
-// Database Connection Middleware (Har request se pehle check karega)
+// 🔹 Database Middleware (Important for Vercel)
 app.use(async (req, res, next) => {
     try {
-        await connectToMongoDB();
+        await connectDB();
         next();
-    } catch (err) {
-        res.status(500).json({ error: "Database connection failed" });
+    } catch (error) {
+        return res.status(500).json({ error: "Database connection failed" });
     }
 });
 
-// Routes
-app.use('/munapi', user);
+// 🔹 Routes
+app.use("/munapi", user);
 
-// Health check route
-app.get('/', (req, res) => {
+// 🔹 Health Check
+app.get("/", (req, res) => {
     res.json({
-        message: 'API is working!',
-        dbStatus: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
+        message: "API is working 🚀",
+        dbStatus: mongoose.connection.readyState === 1 ? "Connected" : "Disconnected"
     });
 });
 
-// Export for Vercel
+// 🔹 Start Server (for local development)
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+    });
+}
+
+// 🔹 Export for Vercel
 module.exports = app;
