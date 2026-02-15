@@ -5,7 +5,7 @@ exports.Usercreate = async (req, res) => {
     try {
         // User create karo
         const user = await User.create(req.body);
-        
+
         // Email send karo
         await sendMail({
             to: user.email,
